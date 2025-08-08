@@ -1,33 +1,38 @@
-// Vercel Serverless Function
-export default async function handler(req, res) {
+// api/subscribe.js
+module.exports = async (req, res) => {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
-
   try {
-    const body = req.body || {};
-    // Basic validation
-    if (!body.topic || !body.frequency || !body.channel) {
+    let body = req.body;
+    if (typeof body === "string") { 
+      try { body = JSON.parse(body || "{}"); } catch { body = {}; } 
+    }
+    const { topic, frequency, channel } = body || {};
+    if (!topic || !frequency || !channel) {
       return res.status(400).json({ success: false, error: "Missing required fields" });
     }
 
-    // Option A: Forward to your n8n webhook (recommended for Vercel)
+    // Réponse immédiate au client pour éviter "Network error"
+    res.status(200).json({ success: true });
+
     const webhook = process.env.N8N_WEBHOOK_URL;
     if (!webhook) {
-      console.log("N8N_WEBHOOK_URL not set. Received payload:", body);
-    } else {
-      await fetch(webhook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      return console.log("[subscribe] No N8N_WEBHOOK_URL, payload:", body);
     }
 
-    // Optionally: you could send a Telegram confirmation here if you store a chat_id later.
-
-    return res.status(200).json({ success: true });
+    const r = await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) {
+      console.error("[subscribe] n8n replied", r.status, await r.text());
+    }
   } catch (e) {
-    console.error(e);
-    return res.status(500).json({ success: false, error: "Internal error" });
+    console.error("[subscribe] fatal:", e);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: "Internal error" });
+    }
   }
-}
+};
