@@ -35,8 +35,18 @@ const PADDING = 30; // marge visuelle à droite
 export default function YoupdateForm() {
   // lignes visibles
   const [searches, setSearches] = useState<Search[]>([
-    { unit: "Week", topic: "", delivery: "Email" },
+    { unit: "Days", topic: "", delivery: "Telegram" },
   ]);
+  // addSearch()
+const addSearch = () => {
+  const idx = searches.length;
+  setSearches((prev) => [...prev, { unit: "Days", topic: "", delivery: "Telegram" }]);
+  setPlaceholderActive((prev) => ({ ...prev, [idx]: true }));
+  setWidths((prev) => ({ ...prev, [idx]: MIN_W }));
+};
+
+// (facultatif) si tu copies unit/delivery de la 1ère ligne dans addSmartInsightLine,
+// ça prendra déjà Days/Telegram grâce à l’état initial, donc rien à changer ici.
 
   // placeholder animé actif tant que le champ est vide et pas focus
   const [placeholderActive, setPlaceholderActive] = useState<Record<number, boolean>>({ 0: true });
@@ -187,7 +197,7 @@ export default function YoupdateForm() {
             </select>
 
             <span className="text-white/80">
-			{s.topic.trim().toLowerCase() === "smart insight" ? "with" : "about"}
+			{(s.topic?.trim().toLowerCase() === "smart insight") ? "with" : "about"}
 			</span>
 
 
