@@ -186,7 +186,10 @@ export default function YoupdateForm() {
               <option value="Week">Weeks</option>
             </select>
 
-            <span className="text-white/80">about</span>
+            <span className="text-white/80">
+			{s.topic.trim().toLowerCase() === "smart insight" ? "with" : "about"}
+			</span>
+
 
             {/* Smart insight sur une ligne dédiée, sinon rendu normal */}
             {s.topic.trim().toLowerCase() === "smart insight" ? (
@@ -326,19 +329,21 @@ export default function YoupdateForm() {
           </button>
         </div>
 
-        {/* Subscribe + prix */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 pt-2">
-          <form onSubmit={onSubscribe}>
-            <button className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-violet hover:bg-brand-violet/90 transition text-white font-medium">
-              Subscribe
-            </button>
-          </form>
+        {/* Subscribe + price (card, centered, vertical) */}
+	<div className="pt-4 flex justify-center">
+	<div className="w-full max-w-xs rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
+    <div className="text-4xl sm:text-5xl font-semibold tracking-tight">
+      {price.toFixed(2)} €<span className="text-white/60 text-base align-top">/month</span>
+		</div>
 
-          <div className="text-3xl sm:text-4xl font-semibold tracking-tight">
-            {price.toFixed(2)} €<span className="text-white/60 text-base">/month</span>
-          </div>
-        </div>
-      </div>
+		<form onSubmit={onSubscribe} className="mt-4">
+		<button className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-violet hover:bg-brand-violet/90 transition text-white font-medium">
+        Subscribe
+		</button>
+		</form>
+		</div>
+	</div>
+
 
       {/* Modal contact */}
       {modalOpen && (
@@ -398,3 +403,4 @@ export default function YoupdateForm() {
     </div>
   );
 }
+
