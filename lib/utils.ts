@@ -1,1 +1,7 @@
-export function cn(...cls){return cls.filter(Boolean).join(' ')}; export function sleep(ms){return new Promise(r=>setTimeout(r,ms))};
+export function cn(...cls: Array<string | number | false | null | undefined>): string {
+  return cls.filter(Boolean).join(" ");
+}
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

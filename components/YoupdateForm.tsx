@@ -1,10 +1,9 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 
 const Typewriter = dynamic(() => import("@/components/Typewriter"), { ssr: false });
-
 
 type Unit = "Days" | "Week";
 type Delivery = "Telegram" | "Email";
@@ -31,36 +30,44 @@ const EXAMPLES = [
 
 // bornes de largeur (px) pour la box "about …"
 const MIN_W = 260;
-const MAX_W = 600;
 const PADDING = 30; // marge visuelle à droite
-
 
 export default function YoupdateForm() {
   // lignes visibles
   const [searches, setSearches] = useState<Search[]>([
-    { unit: "Week", topic: "", delivery: "Teleg" },
+    { unit: "Week", topic: "", delivery: "Email" },
   ]);
 
   // placeholder animé actif tant que le champ est vide et pas focus
   const [placeholderActive, setPlaceholderActive] = useState<Record<number, boolean>>({ 0: true });
 
-  // largeur dynamique par ligne (option B)
+  // largeur dynamique par ligne
   const [widths, setWidths] = useState<Record<number, number>>({ 0: MIN_W });
   const measurersRef = useRef<Record<number, HTMLSpanElement | null>>({});
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+  // refs d’inputs pour focus sur clic placeholder
+  const inputsRef = useRef<Record<number, HTMLInputElement | null>>({});
+
+  useEffect(() => {
+    setSearches((prev) =>
+      prev.map((s) => ({
+        ...s,
+        delivery: s.delivery === "Telegram" || s.delivery === "Email" ? s.delivery : "Email",
+      }))
+    );
+  }, []);
 
   const setMeasurer =
     (i: number) =>
     (el: HTMLSpanElement | null) => {
       measurersRef.current[i] = el;
-      // init width quand le span apparait
       requestAnimationFrame(() => recalcWidth(i, searches[i]?.topic ?? ""));
     };
 
   const recalcWidth = (i: number, text: string) => {
     const measurer = measurersRef.current[i];
     if (!measurer) return;
-    // on mesure le texte (ou 1er exemple si vide) dans le span miroir
     measurer.textContent = (text && text.length > 0 ? text : EXAMPLES[0]) + " ";
     const raw = measurer.offsetWidth + PADDING;
     const clamped = Math.max(raw, MIN_W);
@@ -73,7 +80,6 @@ export default function YoupdateForm() {
   const [telegram, setTelegram] = useState("");
   const [sending, setSending] = useState(false);
   const [serverMsg, setServerMsg] = useState<string | null>(null);
-  
 
   const n8nUrl =
     process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL ??
@@ -116,7 +122,6 @@ export default function YoupdateForm() {
       delete copy[i];
       return copy;
     });
-    // on ne nettoie pas les refs, pas grave
   };
 
   // Smart insight → ajoute une vraie ligne (pas de chip)
@@ -127,7 +132,6 @@ export default function YoupdateForm() {
     setSearches((prev) => [...prev, { unit: base.unit, delivery: base.delivery, topic: "smart insight" }]);
     setPlaceholderActive((prev) => ({ ...prev, [idx]: false }));
     setWidths((prev) => ({ ...prev, [idx]: MIN_W }));
-    // width sera recalculée quand la ref apparait
   };
 
   // abonnement
@@ -167,8 +171,8 @@ export default function YoupdateForm() {
   };
 
   return (
-	<div className="mx-auto w-auto">
-		<div className="inline-block bg-white/5 p-6 md:p-7 rounded-3xl border border-white/10 space-y-4">
+    <div className="mx-auto w-auto">
+      <div className="inline-block bg-white/5 p-6 md:p-7 rounded-3xl border border-white/10 space-y-4">
         {/* === LIGNES === */}
         {searches.map((s, i) => (
           <div key={i} className="text-lg md:text-xl font-medium whitespace-nowrap flex items-center gap-2">
@@ -184,100 +188,117 @@ export default function YoupdateForm() {
 
             <span className="text-white/80">about</span>
 
-             {/* Smart insight sur une ligne dédiée, sinon rendu normal */}
-             {s.topic.trim().toLowerCase() === "smart insight" ? (
-               <div className="w-full flex items-center gap-2">
-                 <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-violet/25 border border-brand-violet/40">
-                   <svg width="16" height="16" viewBox="0 0 24 24" className="opacity-90">
-                     <path fill="currentColor" d="M12 2a6 6 0 0 1 6 6c0 3-2 3.8-2 6H8c0-2.2-2-3-2-6a6 6 0 0 1 6-6Zm-3 16h6v2H9v-2Zm1 3h4v1H10v-1Z"/>
-                   </svg>
-                   Smart insight
-                 </span>
-                 <button
-				type="button"
-				onClick={() => removeSearch(i)}
-				className="ml-2 text-white/80 hover:text-white font-bold text-lg"
-				title="Remove this line"
-				>
-				×
-				</button>
+            {/* Smart insight sur une ligne dédiée, sinon rendu normal */}
+            {s.topic.trim().toLowerCase() === "smart insight" ? (
+              <div className="w-full flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-violet/25 border border-brand-violet/40">
+                  <svg width="16" height="16" viewBox="0 0 24 24" className="opacity-90">
+                    <path fill="currentColor" d="M12 2a6 6 0 0 1 6 6c0 3-2 3.8-2 6H8c0-2.2-2-3-2-6a6 6 0 0 1 6-6Zm-3 16h6v2H9v-2Zm1 3h4v1H10v-1Z"/>
+                  </svg>
+                  Smart insight
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeSearch(i)}
+                  className="ml-2 text-white/80 hover:text-white font-bold text-lg"
+                  title="Remove this line"
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Mesureur invisible (miroir) */}
+                <span
+                  ref={setMeasurer(i)}
+                  className="invisible absolute whitespace-pre"
+                  style={{ position: "absolute", left: -99999, top: -99999 }}
+                />
 
-               </div>
-             ) : (
-               <>
-                 {/* --- Mesureur invisible (miroir) --- */}
-                 <span
-                   ref={setMeasurer(i)}
-                   className="invisible absolute whitespace-pre"
-                   style={{ position: "absolute", left: -99999, top: -99999 }}
-                 />
+                {/* Box visible avec largeur dynamique */}
+                <span
+                  className="relative rounded-xl border border-white/15 bg-white/5 px-3 py-1 text-white/60 cursor-text"
+                  style={{
+                    display: "inline-block",
+                    width: `${widths[i] ?? MIN_W}px`,
+                    minHeight: 40,
+                    transition: "width 0.12s ease-out",
+                  }}
+                  onClick={() => {
+                    setFocusedIndex(i);
+                    setPlaceholderActive((p) => ({ ...p, [i]: false }));
+                    inputsRef.current[i]?.focus();
+                  }}
+                >
+                  {/* placeholder cliquable */}
+                  {!s.topic && focusedIndex !== i && placeholderActive[i] && (
+                    <span
+                      className="absolute inset-0 px-3 py-1 text-white/60 cursor-text"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setFocusedIndex(i);
+                        setPlaceholderActive((p) => ({ ...p, [i]: false }));
+                        inputsRef.current[i]?.focus();
+                      }}
+                    >
+                      <Typewriter
+                        items={EXAMPLES}
+                        typingDelay={35}
+                        pauseMs={1000}
+                        eraseFactor={2}
+                        showCursor={false}
+                      />
+                    </span>
+                  )}
 
-                 {/* --- Box visible avec largeur dynamique --- */}
-                 <span
-                   className="relative rounded-xl border border-white/15 bg-white/5 px-3 py-1 text-white/60"
-                   style={{
-                     display: "inline-block",
-                     width: `${widths[i] ?? MIN_W}px`,
-                     minHeight: 40,
-                     transition: "width 0.12s ease-out",
-                   }}
-                 >
-                   {placeholderActive[i] && !s.topic && (
-                     <Typewriter
-                       items={EXAMPLES}
-                       typingDelay={35}
-                       pauseMs={1000}
-                       eraseFactor={2}
-                       showCursor={false}
-                     />
-                   )}
-					<input
-					  type="text"
-					  value={s.topic}
-					  onChange={(e) => {
-					    const val = e.target.value;
-					    updateSearch(i, { topic: val });
-					    recalcWidth(i, val);
-					  }}
-					  onFocus={() => {
-					    setFocusedIndex(i);
-					    setPlaceholderActive((p) => ({ ...p, [i]: false })); // masque le placeholder tout de suite
- 					 }}
- 					 onBlur={() => {
- 					   setFocusedIndex(null);
- 					   // si tu veux remettre le placeholder si c'est vide après blur :
- 					   setPlaceholderActive((p) => ({ ...p, [i]: !(s.topic ?? "").trim() }));
- 					 }}
- 					 className={
- 					   "bg-transparent outline-none px-0 w-full text-white " + 
- 					   (placeholderActive[i] && !s.topic ? "input-caret-transparent" : "input-caret-white")
-					  }
-					/>
-                 </span>
+                  <input
+                    ref={(el) => {
+                      inputsRef.current[i] = el;
+                    }}
+                    type="text"
+                    value={s.topic}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      updateSearch(i, { topic: val });
+                      recalcWidth(i, val);
+                    }}
+                    onFocus={() => {
+                      setFocusedIndex(i);
+                      setPlaceholderActive((p) => ({ ...p, [i]: false }));
+                    }}
+                    onBlur={() => {
+                      setFocusedIndex(null);
+                      setPlaceholderActive((p) => ({ ...p, [i]: !(s.topic ?? "").trim() }));
+                    }}
+                    className={
+                      "bg-transparent outline-none px-0 w-full text-white " +
+                      (placeholderActive[i] && !s.topic ? "input-caret-transparent" : "input-caret-white")
+                    }
+                  />
+                </span>
 
-                 <span className="text-white/80">via</span>
-                 <select
-                   value={s.delivery}
-                   onChange={(e) => updateSearch(i, { delivery: e.target.value as Delivery })}
-                   className="rounded-lg bg-white/10 border border-white/20 px-2 py-1"
-                 >
-                   <option>Telegram</option>
-                   <option>Email</option>
-                 </select>
+                <span className="text-white/80">via</span>
+                <select
+                  value={s.delivery}
+                  onChange={(e) => updateSearch(i, { delivery: e.target.value as Delivery })}
+                  className="rounded-lg bg-white/10 border border-white/20 px-2 py-1"
+                >
+                  <option value="Telegram">Telegram</option>
+                  <option value="Email">Email</option>
+                </select>
 
-                 {searches.length > 1 && (
-                   <button
-                     type="button"
-                     onClick={() => removeSearch(i)}
-                     className="ml-2 text-white/80 hover:text-white"
-                     title="Remove this line"
-                   >
-                     <X size={16} />
-                   </button>
-                 )}
-               </>
-             )}
-
+                {searches.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeSearch(i)}
+                    className="ml-2 text-white/80 hover:text-white font-bold text-lg"
+                    title="Remove this line"
+                  >
+                    ×
+                  </button>
+                )}
+              </>
+            )}
           </div>
         ))}
 
@@ -298,7 +319,6 @@ export default function YoupdateForm() {
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-violet/25 hover:bg-brand-violet/40 border border-brand-violet/40 transition"
             title="Add a Smart insight line"
           >
-            {/* petite icône “insight” */}
             <svg width="16" height="16" viewBox="0 0 24 24" className="opacity-90">
               <path fill="currentColor" d="M12 2a6 6 0 0 1 6 6c0 3-2 3.8-2 6H8c0-2.2-2-3-2-6a6 6 0 0 1 6-6Zm-3 16h6v2H9v-2Zm1 3h4v1H10v-1Z"/>
             </svg>
