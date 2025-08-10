@@ -28,42 +28,30 @@ const EXAMPLES = [
   "Netflix Series review",
 ];
 
-// bornes de largeur (px) pour la box "about …"
 const MIN_W = 260;
-const PADDING = 30; // marge visuelle à droite
+const PADDING = 30;
 
 export default function YoupdateForm() {
-  // lignes visibles
+  // Lignes visibles → defaults Days + Telegram
   const [searches, setSearches] = useState<Search[]>([
     { unit: "Days", topic: "", delivery: "Telegram" },
   ]);
-  // addSearch()
-const addSearch = () => {
-  const idx = searches.length;
-  setSearches((prev) => [...prev, { unit: "Days", topic: "", delivery: "Telegram" }]);
-  setPlaceholderActive((prev) => ({ ...prev, [idx]: true }));
-  setWidths((prev) => ({ ...prev, [idx]: MIN_W }));
-};
 
-// (facultatif) si tu copies unit/delivery de la 1ère ligne dans addSmartInsightLine,
-// ça prendra déjà Days/Telegram grâce à l’état initial, donc rien à changer ici.
-
-  // placeholder animé actif tant que le champ est vide et pas focus
+  // Placeholder animé par ligne
   const [placeholderActive, setPlaceholderActive] = useState<Record<number, boolean>>({ 0: true });
 
-  // largeur dynamique par ligne
+  // Largeur dynamique
   const [widths, setWidths] = useState<Record<number, number>>({ 0: MIN_W });
   const measurersRef = useRef<Record<number, HTMLSpanElement | null>>({});
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-
-  // refs d’inputs pour focus sur clic placeholder
   const inputsRef = useRef<Record<number, HTMLInputElement | null>>({});
 
+  // Normalisation des valeurs existantes (ne change pas Telegram)
   useEffect(() => {
-    setSearches((prev) =>
-      prev.map((s) => ({
+    setSearches(prev =>
+      prev.map(s => ({
         ...s,
-        delivery: s.delivery === "Telegram" || s.delivery === "Email" ? s.delivery : "Email",
+        delivery: s.delivery === "Telegram" || s.delivery === "Email" ? s.delivery : "Telegram",
       }))
     );
   }, []);
@@ -81,10 +69,10 @@ const addSearch = () => {
     measurer.textContent = (text && text.length > 0 ? text : EXAMPLES[0]) + " ";
     const raw = measurer.offsetWidth + PADDING;
     const clamped = Math.max(raw, MIN_W);
-    setWidths((prev) => (prev[i] === clamped ? prev : { ...prev, [i]: clamped }));
+    setWidths(prev => (prev[i] === clamped ? prev : { ...prev, [i]: clamped }));
   };
 
-  // modal contact
+  // Modal / envoi
   const [modalOpen, setModalOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [telegram, setTelegram] = useState("");
@@ -96,55 +84,56 @@ const addSearch = () => {
     process.env.N8N_WEBHOOK_URL ??
     "";
 
-  // prix: base + par ligne Daily/Weekly
-  const perDayCount = useMemo(() => searches.filter((s) => s.unit === "Days").length, [searches]);
-  const perWeekCount = useMemo(() => searches.filter((s) => s.unit === "Week").length, [searches]);
+  // Prix (Days > Weeks)
+  const perDayCount = useMemo(() => searches.filter(s => s.unit === "Days").length, [searches]);
+  const perWeekCount = useMemo(() => searches.filter(s => s.unit === "Week").length, [searches]);
   const price = useMemo(() => {
     const base = 4;
     return Math.max(2, base + perDayCount * 2.5 + perWeekCount * 1.2);
   }, [perDayCount, perWeekCount]);
 
-  // helpers lignes
+  // Helpers lignes
   const updateSearch = (i: number, patch: Partial<Search>) => {
-    setSearches((prev) => {
+    setSearches(prev => {
       const next = [...prev];
       next[i] = { ...next[i], ...patch };
       return next;
     });
   };
 
+  // ✅ UNIQUE addSearch → Days + Telegram
   const addSearch = () => {
     const idx = searches.length;
-    setSearches((prev) => [...prev, { unit: "Week", topic: "", delivery: "Email" }]);
-    setPlaceholderActive((prev) => ({ ...prev, [idx]: true }));
-    setWidths((prev) => ({ ...prev, [idx]: MIN_W }));
+    setSearches(prev => [...prev, { unit: "Days", topic: "", delivery: "Telegram" }]);
+    setPlaceholderActive(prev => ({ ...prev, [idx]: true }));
+    setWidths(prev => ({ ...prev, [idx]: MIN_W }));
   };
 
   const removeSearch = (i: number) => {
-    setSearches((prev) => prev.filter((_, idx) => idx !== i));
-    setPlaceholderActive((prev) => {
+    setSearches(prev => prev.filter((_, idx) => idx !== i));
+    setPlaceholderActive(prev => {
       const copy = { ...prev };
       delete copy[i];
       return copy;
     });
-    setWidths((prev) => {
+    setWidths(prev => {
       const copy = { ...prev };
       delete copy[i];
       return copy;
     });
   };
 
-  // Smart insight → ajoute une vraie ligne (pas de chip)
+  // ✅ Smart insight → reprend Days/Telegram de la 1ère ligne (ou fallback Days/Telegram)
   const addSmartInsightLine = () => {
-    if (searches.some((s) => s.topic.trim().toLowerCase() === "smart insight")) return;
-    const base = searches[0] ?? { unit: "Week" as Unit, delivery: "Email" as Delivery, topic: "" };
+    if (searches.some(s => s.topic.trim().toLowerCase() === "smart insight")) return;
+    const base = searches[0] ?? { unit: "Days" as Unit, delivery: "Telegram" as Delivery, topic: "" };
     const idx = searches.length;
-    setSearches((prev) => [...prev, { unit: base.unit, delivery: base.delivery, topic: "smart insight" }]);
-    setPlaceholderActive((prev) => ({ ...prev, [idx]: false }));
-    setWidths((prev) => ({ ...prev, [idx]: MIN_W }));
+    setSearches(prev => [...prev, { unit: base.unit, delivery: base.delivery, topic: "smart insight" }]);
+    setPlaceholderActive(prev => ({ ...prev, [idx]: false }));
+    setWidths(prev => ({ ...prev, [idx]: MIN_W }));
   };
 
-  // abonnement
+  // Abonnement
   const onSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     setModalOpen(true);
@@ -155,7 +144,7 @@ const addSearch = () => {
     setServerMsg(null);
     try {
       const payload = {
-        searches: searches.map((s) => ({
+        searches: searches.map(s => ({
           cadence_unit: s.unit,
           delivery: s.delivery,
           topic: s.topic.trim(),
@@ -173,7 +162,7 @@ const addSearch = () => {
         res.ok ? "✅ Subscribed! You’ll start receiving your Youpdates." : `❌ Error ${res.status}: ${text}`
       );
       if (res.ok) setModalOpen(false);
-    } catch (err: any) {
+    } catch {
       setServerMsg("❌ Network error. Check console for details.");
     } finally {
       setSending(false);
@@ -196,13 +185,13 @@ const addSearch = () => {
               <option value="Week">Weeks</option>
             </select>
 
+            {/* about → with si Smart insight */}
             <span className="text-white/80">
-			{(s.topic?.trim().toLowerCase() === "smart insight") ? "with" : "about"}
-			</span>
+              {s.topic?.trim().toLowerCase() === "smart insight" ? "with" : "about"}
+            </span>
 
-
-            {/* Smart insight sur une ligne dédiée, sinon rendu normal */}
             {s.topic.trim().toLowerCase() === "smart insight" ? (
+              // Chip Smart insight
               <div className="w-full flex items-center gap-2">
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-violet/25 border border-brand-violet/40">
                   <svg width="16" height="16" viewBox="0 0 24 24" className="opacity-90">
@@ -221,14 +210,13 @@ const addSearch = () => {
               </div>
             ) : (
               <>
-                {/* Mesureur invisible (miroir) */}
+                {/* Mesureur invisible */}
                 <span
                   ref={setMeasurer(i)}
                   className="invisible absolute whitespace-pre"
                   style={{ position: "absolute", left: -99999, top: -99999 }}
                 />
-
-                {/* Box visible avec largeur dynamique */}
+                {/* Input à largeur dynamique */}
                 <span
                   className="relative rounded-xl border border-white/15 bg-white/5 px-3 py-1 text-white/60 cursor-text"
                   style={{
@@ -239,18 +227,17 @@ const addSearch = () => {
                   }}
                   onClick={() => {
                     setFocusedIndex(i);
-                    setPlaceholderActive((p) => ({ ...p, [i]: false }));
+                    setPlaceholderActive(p => ({ ...p, [i]: false }));
                     inputsRef.current[i]?.focus();
                   }}
                 >
-                  {/* placeholder cliquable */}
                   {!s.topic && focusedIndex !== i && placeholderActive[i] && (
                     <span
                       className="absolute inset-0 px-3 py-1 text-white/60 cursor-text"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
                         setFocusedIndex(i);
-                        setPlaceholderActive((p) => ({ ...p, [i]: false }));
+                        setPlaceholderActive(p => ({ ...p, [i]: false }));
                         inputsRef.current[i]?.focus();
                       }}
                     >
@@ -263,11 +250,8 @@ const addSearch = () => {
                       />
                     </span>
                   )}
-
                   <input
-                    ref={(el) => {
-                      inputsRef.current[i] = el;
-                    }}
+                    ref={(el) => { inputsRef.current[i] = el; }}
                     type="text"
                     value={s.topic}
                     onChange={(e) => {
@@ -277,11 +261,11 @@ const addSearch = () => {
                     }}
                     onFocus={() => {
                       setFocusedIndex(i);
-                      setPlaceholderActive((p) => ({ ...p, [i]: false }));
+                      setPlaceholderActive(p => ({ ...p, [i]: false }));
                     }}
                     onBlur={() => {
                       setFocusedIndex(null);
-                      setPlaceholderActive((p) => ({ ...p, [i]: !(s.topic ?? "").trim() }));
+                      setPlaceholderActive(p => ({ ...p, [i]: !(s.topic ?? "").trim() }));
                     }}
                     className={
                       "bg-transparent outline-none px-0 w-full text-white " +
@@ -315,7 +299,7 @@ const addSearch = () => {
           </div>
         ))}
 
-        {/* Actions (Smart insight ajoute une vraie ligne) */}
+        {/* Actions */}
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -339,78 +323,74 @@ const addSearch = () => {
           </button>
         </div>
 
-        {/* Subscribe + price (card, centered, vertical) */}
-	<div className="pt-4 flex justify-center">
-	<div className="w-full max-w-xs rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
-    <div className="text-4xl sm:text-5xl font-semibold tracking-tight">
-      {price.toFixed(2)} €<span className="text-white/60 text-base align-top">/month</span>
-		</div>
+        {/* Carte prix centrée */}
+        <div className="pt-4 flex justify-center">
+          <div className="w-full max-w-xs rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
+            <div className="text-4xl sm:text-5xl font-semibold tracking-tight">
+              {price.toFixed(2)} €<span className="text-white/60 text-base align-top">/month</span>
+            </div>
+            <form onSubmit={onSubscribe} className="mt-4">
+              <button className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-violet hover:bg-brand-violet/90 transition text-white font-medium">
+                Subscribe
+              </button>
+            </form>
+          </div>
+        </div>
 
-		<form onSubmit={onSubscribe} className="mt-4">
-		<button className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-violet hover:bg-brand-violet/90 transition text-white font-medium">
-        Subscribe
-		</button>
-		</form>
-		</div>
-	</div>
+        {/* Modal contact */}
+        {modalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-md rounded-2xl bg-[#111318] border border-white/10 p-5">
+              <h3 className="text-lg font-semibold">Finish your subscription</h3>
+              <p className="text-sm text-white/60 mt-1">We’ll send your Youpdates to your preferred channel.</p>
 
-
-      {/* Modal contact */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-[#111318] border border-white/10 p-5">
-            <h3 className="text-lg font-semibold">Finish your subscription</h3>
-            <p className="text-sm text-white/60 mt-1">
-              We’ll send your Youpdates to your preferred channel.
-            </p>
-
-            <div className="mt-4 space-y-3">
-              <label className="block">
-                <div className="text-xs text-white/70 mb-1">Email</div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 outline-none focus:border-brand-violet input-caret-white"
-                />
-              </label>
-
-              {searches.some((s) => s.delivery === "Telegram") && (
+              <div className="mt-4 space-y-3">
                 <label className="block">
-                  <div className="text-xs text-white/70 mb-1">Telegram @username</div>
+                  <div className="text-xs text-white/70 mb-1">Email</div>
                   <input
-                    type="text"
-                    value={telegram}
-                    onChange={(e) => setTelegram(e.target.value)}
-                    placeholder="@yourhandle"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
                     className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 outline-none focus:border-brand-violet input-caret-white"
                   />
                 </label>
-              )}
-            </div>
 
-            {serverMsg && <div className="mt-3 text-sm">{serverMsg}</div>}
+                {searches.some((s) => s.delivery === "Telegram") && (
+                  <label className="block">
+                    <div className="text-xs text-white/70 mb-1">Telegram @username</div>
+                    <input
+                      type="text"
+                      value={telegram}
+                      onChange={(e) => setTelegram(e.target.value)}
+                      placeholder="@yourhandle"
+                      className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 outline-none focus:border-brand-violet input-caret-white"
+                    />
+                  </label>
+                )}
+              </div>
 
-            <div className="mt-5 flex items-center gap-2 justify-end">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="px-4 py-2 rounded-lg border border-white/15 hover:bg-white/5 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={actuallySend}
-                disabled={sending || (!email && searches.every((s) => s.delivery === "Email"))}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-violet hover:bg-brand-violet/90 transition"
-              >
-                {sending ? "Sending…" : "Confirm"}
-              </button>
+              {serverMsg && <div className="mt-3 text-sm">{serverMsg}</div>}
+
+              <div className="mt-5 flex items-center gap-2 justify-end">
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-white/15 hover:bg-white/5 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={actuallySend}
+                  disabled={sending || (!email && searches.every((s) => s.delivery === "Email"))}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-violet hover:bg-brand-violet/90 transition"
+                >
+                  {sending ? "Sending…" : "Confirm"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
-
